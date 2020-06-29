@@ -41,9 +41,11 @@ function configure() {
 }
 
 function install_and_configure_gpdb() {
-  install_gpdb
-  setup_configure_vars
-  configure
+	 yum erase libevent-devel -y
+	 yum install libevent2-devel -y
+	 install_gpdb
+	 setup_configure_vars
+	 configure
 }
 
 function make_cluster() {

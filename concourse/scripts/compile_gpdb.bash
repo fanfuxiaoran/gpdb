@@ -53,6 +53,12 @@ function install_deps_for_centos_or_sles() {
   rpm -i libquicklz-devel-installer/libquicklz-*.rpm
   # install libsigar from tar.gz
   tar zxf libsigar-installer/sigar-*.targz -C gpdb_src/gpAux/ext
+
+  case "${TARGET_OS}" in
+    centos ) 
+		yum erase libevent-devel -y
+		yum install libevent2-devel -y
+  esac
 }
 
 function install_deps_for_ubuntu() {

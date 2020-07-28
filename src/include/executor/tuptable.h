@@ -150,6 +150,10 @@ typedef struct TupleTableSlot
 
     /* System attributes */
     Oid         tts_tableOid;
+
+	/* For fdw extension */
+	Datum      *tts_values;     /* current per-attribute values */
+	bool       *tts_isnull;     /* current per-attribute isnull flags */
 } TupleTableSlot;
 
 #ifndef FRONTEND

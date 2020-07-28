@@ -48,6 +48,8 @@ ForeignNext(ForeignScanState *node)
 	/* Call the Iterate function in short-lived context */
 	oldcontext = MemoryContextSwitchTo(econtext->ecxt_per_tuple_memory);
 	slot = node->fdwroutine->IterateForeignScan(node);
+	slot->PRIVATE_tts_values = slot->tts_values;
+	slot->PRIVATE_tts_isnull = slot->tts_isnull;
 	MemoryContextSwitchTo(oldcontext);
 
 	/*

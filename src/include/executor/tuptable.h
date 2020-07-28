@@ -394,6 +394,12 @@ extern TupleTableSlot *ExecStoreHeapTuple(HeapTuple tuple,
 			   TupleTableSlot *slot,
 			   Buffer buffer,
 			   bool shouldFree);
+
+#define ExecStoreTuple(tuple, slot, buffer , shouldFree) \
+	do { \
+		ExecStoreHeapTuple(tuple, slot, buffer, shouldFree); \
+	} while(0)
+
 extern TupleTableSlot *ExecStoreMinimalTuple(MemTuple mtup,
 					  TupleTableSlot *slot,
 					  bool shouldFree);

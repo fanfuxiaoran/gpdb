@@ -404,6 +404,19 @@ ExecInsert(TupleTableSlot *parentslot,
 
 		if (slot == NULL)		/* "do nothing" */
 			return NULL;
+		/*
+		 * There might be Triggers on the remote table
+		 * which modifiy the values, so need to update
+		 * parentslot values.
+		 */
+		updateParentTuple(slot,parentslot,resultRelInfo);
+
+		/*
+		 * AFTER ROW Triggers or RETURNING expressions might reference the
+		 * tableoid column, so initialize t_tableOid before evaluating them.
+		 */
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
+		parentslot->tts_tableOid = slot->tts_tableOid;
 
 #if 0
 		/* FDW might have changed tuple */
@@ -699,6 +712,7 @@ ExecDelete(ItemPointer tupleid,
 		if (slot->PRIVATE_tts_flags & TTS_ISEMPTY)
 			ExecStoreAllNullTuple(slot);
 
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
 		/*
 		 * GPDB_94_MERGE_FIXME: gpdb does not use tableoid. Do we need to bring
 		 * the related code back?
@@ -1325,6 +1339,7 @@ ExecUpdate(ItemPointer tupleid,
 
 		if (slot == NULL)		/* "do nothing" */
 			return NULL;
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
 
 #if 0
 		/* FDW might have changed tuple */

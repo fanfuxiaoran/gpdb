@@ -23,6 +23,8 @@ reconstructTupleValues(AttrMap *map,
 
 extern TupleTableSlot *
 reconstructMatchingTupleSlot(TupleTableSlot *slot, ResultRelInfo *resultRelInfo);
+extern void
+updateParentTuple(TupleTableSlot *slot, TupleTableSlot *parentslot, ResultRelInfo *resultRelInfo);
 
 /*
  * In PostgreSQL, ExecInsert, ExecDelete and ExecUpdate are static in nodeModifyTable.c.

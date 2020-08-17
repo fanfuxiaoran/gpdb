@@ -49,6 +49,26 @@ reconstructTupleValues(AttrMap *map,
 	}
 }
 
+// map's key is oldAttNo, value is newAttNo
+void
+updateOldTupleValues(AttrMap *map,
+					Datum *oldValues, bool *oldIsnull, int oldNumAttrs,
+					Datum *newValues, bool *newIsnull, int newNumAttrs)
+{
+	for (int oldAttNo = 1; oldAttNo <= oldNumAttrs; oldAttNo++)
+	{
+		int newAttNo = attrMap(map, oldAttNo);
+		if (newAttNo == 0)
+		{
+			continue;
+		}
+
+		Assert(newAttNo <= newNumAttrs);
+		oldValues[oldAttNo - 1] = newValues[newAttNo - 1];
+		oldIsnull[oldAttNo - 1] = newIsnull[newAttNo - 1];
+
+	}
+}
 /*
  * Use the supplied ResultRelInfo to create an appropriately restructured
  * version of the tuple in the supplied slot, if necessary.
@@ -124,4 +144,45 @@ reconstructMatchingTupleSlot(TupleTableSlot *slot, ResultRelInfo *resultRelInfo)
 	partslot = ExecStoreVirtualTuple(partslot);
 
 	return partslot;
+}
+
+void
+updateParentTuple(TupleTableSlot *slot, TupleTableSlot *parentslot, ResultRelInfo *resultRelInfo)
+{
+	int natts;
+	Datum *values;
+	bool *isnull;
+	AttrMap *map;
+	Datum *parentvalues;
+	bool *parentisnull;
+
+	map = resultRelInfo->ri_partInsertMap;
+
+	bool tupleDescMatch = (resultRelInfo->tupdesc_match == 1);
+	/* No map and matching tuple descriptor means no updating needed. */
+	if (map == NULL && tupleDescMatch)
+		return ;
+
+	/* Put the given tuple into attribute arrays. */
+	natts = slot->tts_tupleDescriptor->natts;
+	slot_getallattrs(slot);
+	values = slot_get_values(slot);
+	isnull = slot_get_isnull(slot);
+
+	/*
+	 * Get the target slot ready.
+	 */
+	parentvalues = slot_get_values(parentslot);
+	parentisnull = slot_get_isnull(parentslot);
+
+	/* Restructure the input tuple.  Non-zero map entries are attribute
+	 * numbers in the target tuple, however, not every attribute
+	 * number of the input tuple need be present.  In particular,
+	 * attribute numbers corresponding to dropped attributes will be
+	 * missing.
+	 */
+	updateOldTupleValues(map, parentvalues, parentisnull, natts,
+						values, isnull, slot->tts_tupleDescriptor->natts);
+
+	return;
 }

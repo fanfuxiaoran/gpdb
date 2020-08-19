@@ -405,18 +405,17 @@ ExecInsert(TupleTableSlot *parentslot,
 		if (slot == NULL)		/* "do nothing" */
 			return NULL;
 		/*
+		 * AFTER ROW Triggers or RETURNING expressions might reference the
+		 * tableoid column, so initialize t_tableOid before evaluating them.
+		 */
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
+
+		/*
 		 * There might be Triggers on the remote table
 		 * which modifiy the values, so need to update
 		 * parentslot values.
 		 */
 		updateParentTuple(slot,parentslot,resultRelInfo);
-
-		/*
-		 * AFTER ROW Triggers or RETURNING expressions might reference the
-		 * tableoid column, so initialize t_tableOid before evaluating them.
-		 */
-		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
-		parentslot->tts_tableOid = slot->tts_tableOid;
 
 #if 0
 		/* FDW might have changed tuple */

@@ -1,10 +1,11 @@
 -- ===================================================================
 -- create FDW objects
 -- ===================================================================
+SET timezone = 'PST8PDT';
 CREATE EXTENSION postgres_fdw;
 CREATE SERVER testserver1 FOREIGN DATA WRAPPER postgres_fdw;
 CREATE SERVER loopback FOREIGN DATA WRAPPER postgres_fdw
-  OPTIONS (dbname 'contrib_regression');
+  OPTIONS (dbname 'contrib_regression', host 'localhost', port '7000');
 CREATE USER MAPPING FOR public SERVER testserver1
 	OPTIONS (user 'value', password 'value');
 CREATE USER MAPPING FOR CURRENT_USER SERVER loopback;
@@ -12,39 +13,6 @@ CREATE USER MAPPING FOR CURRENT_USER SERVER loopback;
 -- create objects used through FDW loopback server
 -- ===================================================================
 CREATE TYPE user_enum AS ENUM ('foo', 'bar', 'buz');
-CREATE SCHEMA "S 1";
-CREATE TABLE "S 1"."T 1" (
-	"C 1" int NOT NULL,
-	c2 int NOT NULL,
-	c3 text,
-	c4 timestamptz,
-	c5 timestamp,
-	c6 varchar(10),
-	c7 char(10),
-	c8 user_enum,
-	CONSTRAINT t1_pkey PRIMARY KEY ("C 1")
-);
-CREATE TABLE "S 1"."T 2" (
-	c1 int NOT NULL,
-	c2 text,
-	CONSTRAINT t2_pkey PRIMARY KEY (c1)
-);
-INSERT INTO "S 1"."T 1"
-	SELECT id,
-	       id % 10,
-	       to_char(id, 'FM00000'),
-	       '1970-01-01'::timestamptz + ((id % 100) || ' days')::interval,
-	       '1970-01-01'::timestamp + ((id % 100) || ' days')::interval,
-	       id % 10,
-	       id % 10,
-	       'foo'::user_enum
-	FROM generate_series(1, 1000) id;
-INSERT INTO "S 1"."T 2"
-	SELECT id,
-	       'AAA' || to_char(id, 'FM000')
-	FROM generate_series(1, 100) id;
-ANALYZE "S 1"."T 1";
-ANALYZE "S 1"."T 2";
 -- ===================================================================
 -- create foreign tables
 -- ===================================================================
@@ -168,13 +136,14 @@ ALTER FOREIGN TABLE ft2 OPTIONS (use_remote_estimate 'true');
 -- ===================================================================
 -- single table, with/without alias
 EXPLAIN (COSTS false) SELECT * FROM ft1 ORDER BY c3, c1 OFFSET 100 LIMIT 10;
-           QUERY PLAN            
----------------------------------
+             QUERY PLAN              
+-------------------------------------
  Limit
    ->  Sort
          Sort Key: c3, c1
          ->  Foreign Scan on ft1
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 SELECT * FROM ft1 ORDER BY c3, c1 OFFSET 100 LIMIT 10;
  c1  | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -202,7 +171,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 ORDER BY t1.c3, t1.c1 OFFSET
          ->  Foreign Scan on public.ft1 t1
                Output: c1, c2, c3, c4, c5, c6, c7, c8
                Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(8 rows)
+ Optimizer: Postgres query optimizer
+(9 rows)
 
 SELECT * FROM ft1 t1 ORDER BY t1.c3, t1.c1 OFFSET 100 LIMIT 10;
  c1  | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -231,7 +201,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT t1 FROM ft1 t1 ORDER BY t1.c3, t1.c1 OFFSE
          ->  Foreign Scan on public.ft1 t1
                Output: t1.*, c3, c1
                Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(8 rows)
+ Optimizer: Postgres query optimizer
+(9 rows)
 
 SELECT t1 FROM ft1 t1 ORDER BY t1.c3, t1.c1 OFFSET 100 LIMIT 10;
                                              t1                                             
@@ -261,7 +232,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = 101 AND t1.c6 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((c7 >= '1'::bpchar)) AND (("C 1" = 101)) AND ((c6 = '1'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 SELECT * FROM ft1 t1 WHERE t1.c1 = 101 AND t1.c6 = '1' AND t1.c7 >= '1';
  c1  | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -278,7 +250,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = 101 FOR UPDATE;
    ->  Foreign Scan on public.ft1 t1
          Output: c1, c2, c3, c4, c5, c6, c7, c8, t1.*
          Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 101)) FOR UPDATE
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 SELECT * FROM ft1 t1 WHERE c1 = 101 FOR UPDATE;
  c1  | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -294,7 +267,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = 102 FOR SHARE;
    ->  Foreign Scan on public.ft1 t1
          Output: c1, c2, c3, c4, c5, c6, c7, c8, t1.*
          Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 102)) FOR SHARE
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 SELECT * FROM ft1 t1 WHERE c1 = 102 FOR SHARE;
  c1  | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -391,7 +365,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = postgres_fdw_a
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c1 = postgres_fdw_abs(t1.c2))
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 === t1.c2;
                                QUERY PLAN                                
@@ -400,7 +375,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 === t1.c2;
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c1 === t1.c2)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = abs(t1.c2);
                                             QUERY PLAN                                             
@@ -408,7 +384,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = abs(t1.c2);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = abs(c2)))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = t1.c2;
                                           QUERY PLAN                                          
@@ -416,7 +393,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = t1.c2;
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = c2))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 -- ===================================================================
 -- WHERE with remotely-executable conditions
@@ -427,7 +405,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = 1;         -- 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = 100 AND t1.c2 = 0; -- BoolExpr
                                                   QUERY PLAN                                                  
@@ -435,7 +414,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE t1.c1 = 100 AND t1.c2 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 100)) AND ((c2 = 0))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 IS NULL;        -- NullTest
                                            QUERY PLAN                                            
@@ -451,7 +431,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 IS NOT NULL;    -- 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" IS NOT NULL))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE round(abs(c1), 0) = 1; -- FuncExpr
                                                      QUERY PLAN                                                      
@@ -459,7 +440,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE round(abs(c1), 0) = 1;
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((round(abs("C 1"), 0) = 1::numeric))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = -c1;          -- OpExpr(l)
                                              QUERY PLAN                                              
@@ -467,7 +449,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = -c1;          -- 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = (- "C 1")))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE 1 = c1!;           -- OpExpr(r)
                                                 QUERY PLAN                                                
@@ -475,7 +458,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE 1 = c1!;           -- 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((1::numeric = ("C 1" !)))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE (c1 IS NOT NULL) IS DISTINCT FROM (c1 IS NOT NULL); -- DistinctExpr
                                                                  QUERY PLAN                                                                 
@@ -483,7 +467,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE (c1 IS NOT NULL) IS DI
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((("C 1" IS NOT NULL) IS DISTINCT FROM ("C 1" IS NOT NULL)))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = ANY(ARRAY[c2, 1, c1 + 0]); -- ScalarArrayOpExpr
                                                         QUERY PLAN                                                         
@@ -491,7 +476,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = ANY(ARRAY[c2, 1, 
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = ANY (ARRAY[c2, 1, ("C 1" + 0)])))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = (ARRAY[c1,c2,3])[1]; -- ArrayRef
                                                       QUERY PLAN                                                      
@@ -499,7 +485,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c1 = (ARRAY[c1,c2,3])[
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = ((ARRAY["C 1", c2, 3])[1])))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c6 = E'foo''s\\bar';  -- check special chars
                                                  QUERY PLAN                                                  
@@ -507,7 +494,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c6 = E'foo''s\\bar';  
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((c6 = E'foo''s\\bar'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c8 = 'foo';  -- can't be sent to remote
                                QUERY PLAN                                
@@ -516,7 +504,8 @@ EXPLAIN (VERBOSE, COSTS false) SELECT * FROM ft1 t1 WHERE c8 = 'foo';  -- can't 
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 -- parameterized remote path
 EXPLAIN (VERBOSE, COSTS false)
@@ -683,61 +672,30 @@ SELECT * FROM ft2 WHERE c1 = ANY (ARRAY(SELECT c1 FROM ft1 WHERE c1 < 5));
 (4 rows)
 
 -- bug #15613: bad plan for foreign table scan with lateral reference
-EXPLAIN (VERBOSE, COSTS OFF)
-SELECT ref_0.c2, subq_1.*
-FROM
-    "S 1"."T 1" AS ref_0,
-    LATERAL (
-        SELECT ref_0."C 1" c1, subq_0.*
-        FROM (SELECT ref_0.c2, ref_1.c3
-              FROM ft1 AS ref_1) AS subq_0
-             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
-    ) AS subq_1
-WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
-ORDER BY ref_0."C 1";
-                                               QUERY PLAN                                                
----------------------------------------------------------------------------------------------------------
- Nested Loop
-   Output: ref_0.c2, ref_0."C 1", (ref_0.c2), ref_1.c3, ref_0."C 1"
-   ->  Nested Loop
-         Output: ref_0.c2, ref_0."C 1", ref_1.c3, (ref_0.c2)
-         ->  Index Scan using t1_pkey on "S 1"."T 1" ref_0
-               Output: ref_0."C 1", ref_0.c2, ref_0.c3, ref_0.c4, ref_0.c5, ref_0.c6, ref_0.c7, ref_0.c8
-               Index Cond: (ref_0."C 1" < 10)
-         ->  Foreign Scan on public.ft1 ref_1
-               Output: ref_1.c3, ref_0.c2
-               Remote SQL: SELECT c3 FROM "S 1"."T 1" WHERE ((c3 = '00001'::text))
-   ->  Materialize
-         Output: ref_3.c3
-         ->  Foreign Scan on public.ft2 ref_3
-               Output: ref_3.c3
-               Remote SQL: SELECT c3 FROM "S 1"."T 1" WHERE ((c3 = '00001'::text))
-(15 rows)
-
-SELECT ref_0.c2, subq_1.*
-FROM
-    "S 1"."T 1" AS ref_0,
-    LATERAL (
-        SELECT ref_0."C 1" c1, subq_0.*
-        FROM (SELECT ref_0.c2, ref_1.c3
-              FROM ft1 AS ref_1) AS subq_0
-             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
-    ) AS subq_1
-WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
-ORDER BY ref_0."C 1";
- c2 | c1 | c2 |  c3   
-----+----+----+-------
-  1 |  1 |  1 | 00001
-  2 |  2 |  2 | 00001
-  3 |  3 |  3 | 00001
-  4 |  4 |  4 | 00001
-  5 |  5 |  5 | 00001
-  6 |  6 |  6 | 00001
-  7 |  7 |  7 | 00001
-  8 |  8 |  8 | 00001
-  9 |  9 |  9 | 00001
-(9 rows)
-
+--EXPLAIN (VERBOSE, COSTS OFF)
+--SELECT ref_0.c2, subq_1.*
+--FROM
+--    "S 1"."T 1" AS ref_0,
+--    LATERAL (
+--        SELECT ref_0."C 1" c1, subq_0.*
+--        FROM (SELECT ref_0.c2, ref_1.c3
+--              FROM ft1 AS ref_1) AS subq_0
+--             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
+--    ) AS subq_1
+--WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
+--ORDER BY ref_0."C 1";
+--
+--SELECT ref_0.c2, subq_1.*
+--FROM
+--    "S 1"."T 1" AS ref_0,
+--    LATERAL (
+--        SELECT ref_0."C 1" c1, subq_0.*
+--        FROM (SELECT ref_0.c2, ref_1.c3
+--              FROM ft1 AS ref_1) AS subq_0
+--             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
+--    ) AS subq_1
+--WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
+--ORDER BY ref_0."C 1";
 -- ===================================================================
 -- parameterized queries
 -- ===================================================================
@@ -842,7 +800,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
                                          QUERY PLAN                                          
@@ -850,7 +809,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
                                          QUERY PLAN                                          
@@ -858,7 +818,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
                                          QUERY PLAN                                          
@@ -866,7 +827,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
                                          QUERY PLAN                                          
@@ -874,7 +836,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 -- once we try it enough times, should switch to generic plan
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
@@ -883,7 +846,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st4(1);
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = $1::integer))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 -- value of $1 should not be sent to remote
 PREPARE st5(user_enum,int) AS SELECT * FROM ft1 t1 WHERE c8 = $1 and c1 = $2;
@@ -894,7 +858,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
                                          QUERY PLAN                                          
@@ -903,7 +868,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
                                          QUERY PLAN                                          
@@ -912,7 +878,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
                                          QUERY PLAN                                          
@@ -921,7 +888,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
                                          QUERY PLAN                                          
@@ -930,7 +898,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = 'foo'::user_enum)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = 1))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
                                               QUERY PLAN                                               
@@ -939,7 +908,8 @@ EXPLAIN (VERBOSE, COSTS false) EXECUTE st5('foo', 1);
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Filter: (t1.c8 = $1)
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = $1::integer))
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 EXECUTE st5('foo', 1);
  c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -955,7 +925,8 @@ EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE (("C 1" = c2))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 PREPARE st7 AS INSERT INTO ft1 (c1,c2,c3) VALUES (1001,101,'foo');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
@@ -965,9 +936,11 @@ EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
    Remote SQL: INSERT INTO "S 1"."T 1"("C 1", c2, c3, c4, c5, c6, c7, c8) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
    ->  Result
          Output: NULL::integer, 1001, 101, 'foo'::text, NULL::timestamp with time zone, NULL::timestamp without time zone, NULL::character varying, 'ft1       '::character(10), NULL::user_enum
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
-ALTER TABLE "S 1"."T 1" RENAME TO "T 0";
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 1" RENAME TO "T 0";'
+ALTER TABLE
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 0');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
                                           QUERY PLAN                                          
@@ -975,7 +948,8 @@ EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 0" WHERE (("C 1" = c2))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 EXECUTE st6;
  c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -998,9 +972,11 @@ EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
    Remote SQL: INSERT INTO "S 1"."T 0"("C 1", c2, c3, c4, c5, c6, c7, c8) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
    ->  Result
          Output: NULL::integer, 1001, 101, 'foo'::text, NULL::timestamp with time zone, NULL::timestamp without time zone, NULL::character varying, 'ft1       '::character(10), NULL::user_enum
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
-ALTER TABLE "S 1"."T 0" RENAME TO "T 1";
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 0" RENAME TO "T 1"';
+ALTER TABLE
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 1');
 -- cleanup
 DEALLOCATE st1;
@@ -1021,7 +997,8 @@ SELECT * FROM ft1 t1 WHERE t1.tableoid = 'pg_class'::regclass LIMIT 1;
          Output: c1, c2, c3, c4, c5, c6, c7, c8
          Filter: (t1.tableoid = 1259::oid)
          Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(6 rows)
+ Optimizer: Postgres query optimizer
+(7 rows)
 
 SELECT * FROM ft1 t1 WHERE t1.tableoid = 'ft1'::regclass LIMIT 1;
  c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -1038,7 +1015,8 @@ SELECT tableoid::regclass, * FROM ft1 t1 LIMIT 1;
    ->  Foreign Scan on public.ft1 t1
          Output: (tableoid)::regclass, c1, c2, c3, c4, c5, c6, c7, c8
          Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1"
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 SELECT tableoid::regclass, * FROM ft1 t1 LIMIT 1;
  tableoid | c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -1053,7 +1031,8 @@ SELECT * FROM ft1 t1 WHERE t1.ctid = '(0,2)';
  Foreign Scan on public.ft1 t1
    Output: c1, c2, c3, c4, c5, c6, c7, c8
    Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((ctid = '(0,2)'::tid))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 SELECT * FROM ft1 t1 WHERE t1.ctid = '(0,2)';
  c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -1070,7 +1049,8 @@ SELECT ctid, * FROM ft1 t1 LIMIT 1;
    ->  Foreign Scan on public.ft1 t1
          Output: ctid, c1, c2, c3, c4, c5, c6, c7, c8
          Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8, ctid FROM "S 1"."T 1"
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 SELECT ctid, * FROM ft1 t1 LIMIT 1;
  ctid  | c1 | c2 |  c3   |              c4              |            c5            | c6 |     c7     | c8  
@@ -1150,7 +1130,7 @@ COMMIT;
 -- ===================================================================
 -- test handling of collations
 -- ===================================================================
-create table loct3 (f1 text collate "C" unique, f2 text, f3 varchar(10) unique);
+-- create table loct3 (f1 text collate "C" unique, f2 text, f3 varchar(10) unique);
 create foreign table ft3 (f1 text collate "C", f2 text, f3 varchar(10))
   server loopback options (table_name 'loct3', use_remote_estimate 'true');
 -- can be sent to remote
@@ -1160,7 +1140,8 @@ explain (verbose, costs off) select * from ft3 where f1 = 'foo';
  Foreign Scan on public.ft3
    Output: f1, f2, f3
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3 WHERE ((f1 = 'foo'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 explain (verbose, costs off) select * from ft3 where f1 COLLATE "C" = 'foo';
                                   QUERY PLAN                                  
@@ -1168,7 +1149,8 @@ explain (verbose, costs off) select * from ft3 where f1 COLLATE "C" = 'foo';
  Foreign Scan on public.ft3
    Output: f1, f2, f3
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3 WHERE ((f1 = 'foo'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 explain (verbose, costs off) select * from ft3 where f2 = 'foo';
                                   QUERY PLAN                                  
@@ -1176,7 +1158,8 @@ explain (verbose, costs off) select * from ft3 where f2 = 'foo';
  Foreign Scan on public.ft3
    Output: f1, f2, f3
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3 WHERE ((f2 = 'foo'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 explain (verbose, costs off) select * from ft3 where f3 = 'foo';
                                   QUERY PLAN                                  
@@ -1184,22 +1167,11 @@ explain (verbose, costs off) select * from ft3 where f3 = 'foo';
  Foreign Scan on public.ft3
    Output: f1, f2, f3
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3 WHERE ((f3 = 'foo'::text))
-(3 rows)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
-explain (verbose, costs off) select * from ft3 f, loct3 l
-  where f.f3 = l.f3 and l.f1 = 'foo';
-                                            QUERY PLAN                                            
---------------------------------------------------------------------------------------------------
- Nested Loop
-   Output: f.f1, f.f2, f.f3, l.f1, l.f2, l.f3
-   ->  Index Scan using loct3_f1_key on public.loct3 l
-         Output: l.f1, l.f2, l.f3
-         Index Cond: (l.f1 = 'foo'::text)
-   ->  Foreign Scan on public.ft3 f
-         Output: f.f1, f.f2, f.f3
-         Remote SQL: SELECT f1, f2, f3 FROM public.loct3 WHERE (($1::character varying(10) = f3))
-(8 rows)
-
+-- explain (verbose, costs off) select * from ft3 f, loct3 l
+--where f.f3 = l.f3 and l.f1 = 'foo';
 -- can't be sent to remote
 explain (verbose, costs off) select * from ft3 where f1 COLLATE "POSIX" = 'foo';
                     QUERY PLAN                     
@@ -1208,7 +1180,8 @@ explain (verbose, costs off) select * from ft3 where f1 COLLATE "POSIX" = 'foo';
    Output: f1, f2, f3
    Filter: ((ft3.f1)::text = 'foo'::text)
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 explain (verbose, costs off) select * from ft3 where f1 = 'foo' COLLATE "C";
                     QUERY PLAN                     
@@ -1217,7 +1190,8 @@ explain (verbose, costs off) select * from ft3 where f1 = 'foo' COLLATE "C";
    Output: f1, f2, f3
    Filter: (ft3.f1 = 'foo'::text COLLATE "C")
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 explain (verbose, costs off) select * from ft3 where f2 COLLATE "C" = 'foo';
                     QUERY PLAN                     
@@ -1226,7 +1200,8 @@ explain (verbose, costs off) select * from ft3 where f2 COLLATE "C" = 'foo';
    Output: f1, f2, f3
    Filter: ((ft3.f2)::text = 'foo'::text)
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
 explain (verbose, costs off) select * from ft3 where f2 = 'foo' COLLATE "C";
                     QUERY PLAN                     
@@ -1235,25 +1210,11 @@ explain (verbose, costs off) select * from ft3 where f2 = 'foo' COLLATE "C";
    Output: f1, f2, f3
    Filter: (ft3.f2 = 'foo'::text COLLATE "C")
    Remote SQL: SELECT f1, f2, f3 FROM public.loct3
-(4 rows)
+ Optimizer: Postgres query optimizer
+(5 rows)
 
-explain (verbose, costs off) select * from ft3 f, loct3 l
-  where f.f3 = l.f3 COLLATE "POSIX" and l.f1 = 'foo';
-                         QUERY PLAN                          
--------------------------------------------------------------
- Hash Join
-   Output: f.f1, f.f2, f.f3, l.f1, l.f2, l.f3
-   Hash Cond: ((f.f3)::text = (l.f3)::text)
-   ->  Foreign Scan on public.ft3 f
-         Output: f.f1, f.f2, f.f3
-         Remote SQL: SELECT f1, f2, f3 FROM public.loct3
-   ->  Hash
-         Output: l.f1, l.f2, l.f3
-         ->  Index Scan using loct3_f1_key on public.loct3 l
-               Output: l.f1, l.f2, l.f3
-               Index Cond: (l.f1 = 'foo'::text)
-(11 rows)
-
+-- explain (verbose, costs off) select * from ft3 f, loct3 l
+--  where f.f3 = l.f3 COLLATE "POSIX" and l.f1 = 'foo';
 -- ===================================================================
 -- test writable foreign table stuff
 -- ===================================================================
@@ -1270,7 +1231,8 @@ INSERT INTO ft2 (c1,c2,c3) SELECT c1+1000,c2+100, c3 || c3 FROM ft2 LIMIT 20;
                ->  Foreign Scan on public.ft2 ft2_1
                      Output: (ft2_1.c1 + 1000), (ft2_1.c2 + 100), (ft2_1.c3 || ft2_1.c3)
                      Remote SQL: SELECT "C 1", c2, c3 FROM "S 1"."T 1"
-(9 rows)
+ Optimizer: Postgres query optimizer
+(10 rows)
 
 INSERT INTO ft2 (c1,c2,c3) SELECT c1+1000,c2+100, c3 || c3 FROM ft2 LIMIT 20;
 INSERT INTO ft2 (c1,c2,c3)
@@ -1409,7 +1371,8 @@ UPDATE ft2 SET c2 = ft2.c2 + 500, c3 = ft2.c3 || '_update9', c7 = DEFAULT
                ->  Foreign Scan on public.ft1
                      Output: ft1.*, ft1.c1
                      Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((("C 1" % 10) = 9))
-(13 rows)
+ Optimizer: Postgres query optimizer
+(14 rows)
 
 UPDATE ft2 SET c2 = ft2.c2 + 500, c3 = ft2.c3 || '_update9', c7 = DEFAULT
   FROM ft1 WHERE ft1.c1 = ft2.c2 AND ft1.c1 % 10 = 9;
@@ -1423,7 +1386,8 @@ EXPLAIN (verbose, costs off)
    ->  Foreign Scan on public.ft2
          Output: ctid
          Remote SQL: SELECT ctid FROM "S 1"."T 1" WHERE ((("C 1" % 10) = 5)) FOR UPDATE
-(6 rows)
+ Optimizer: Postgres query optimizer
+(7 rows)
 
 DELETE FROM ft2 WHERE c1 % 10 = 5 RETURNING c1, c4;
   c1  |              c4              
@@ -1550,7 +1514,8 @@ DELETE FROM ft2 USING ft1 WHERE ft1.c1 = ft2.c2 AND ft1.c1 % 10 = 2;
                ->  Foreign Scan on public.ft1
                      Output: ft1.*, ft1.c1
                      Remote SQL: SELECT "C 1", c2, c3, c4, c5, c6, c7, c8 FROM "S 1"."T 1" WHERE ((("C 1" % 10) = 2))
-(13 rows)
+ Optimizer: Postgres query optimizer
+(14 rows)
 
 DELETE FROM ft2 USING ft1 WHERE ft1.c1 = ft2.c2 AND ft1.c1 % 10 = 2;
 SELECT c1,c2,c3,c4 FROM ft2 ORDER BY c1;
@@ -2386,7 +2351,8 @@ INSERT INTO ft2 (c1,c2,c3) VALUES (9999,999,'foo') RETURNING tableoid::regclass;
    Remote SQL: INSERT INTO "S 1"."T 1"("C 1", c2, c3, c4, c5, c6, c7, c8) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
    ->  Result
          Output: 9999, 999, NULL::integer, 'foo'::text, NULL::timestamp with time zone, NULL::timestamp without time zone, NULL::character varying, 'ft2       '::character(10), NULL::user_enum
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 INSERT INTO ft2 (c1,c2,c3) VALUES (9999,999,'foo') RETURNING tableoid::regclass;
  tableoid 
@@ -2404,7 +2370,8 @@ UPDATE ft2 SET c3 = 'bar' WHERE c1 = 9999 RETURNING tableoid::regclass;
    ->  Foreign Scan on public.ft2
          Output: c1, c2, NULL::integer, 'bar'::text, c4, c5, c6, c7, c8, ctid
          Remote SQL: SELECT "C 1", c2, c4, c5, c6, c7, c8, ctid FROM "S 1"."T 1" WHERE (("C 1" = 9999)) FOR UPDATE
-(6 rows)
+ Optimizer: Postgres query optimizer
+(7 rows)
 
 UPDATE ft2 SET c3 = 'bar' WHERE c1 = 9999 RETURNING tableoid::regclass;
  tableoid 
@@ -2422,7 +2389,8 @@ DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
    ->  Foreign Scan on public.ft2
          Output: ctid
          Remote SQL: SELECT ctid FROM "S 1"."T 1" WHERE (("C 1" = 9999)) FOR UPDATE
-(6 rows)
+ Optimizer: Postgres query optimizer
+(7 rows)
 
 DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
  tableoid 
@@ -2431,14 +2399,9 @@ DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
 (1 row)
 
 -- Test that trigger on remote table works as expected
-CREATE OR REPLACE FUNCTION "S 1".F_BRTRIG() RETURNS trigger AS $$
-BEGIN
-    NEW.c3 = NEW.c3 || '_trig_update';
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER t1_br_insert BEFORE INSERT OR UPDATE
-    ON "S 1"."T 1" FOR EACH ROW EXECUTE PROCEDURE "S 1".F_BRTRIG();
+ \! psql -p 7000 contrib_regression -f sql/create_trigger.sql
+CREATE FUNCTION
+CREATE TRIGGER
 INSERT INTO ft2 (c1,c2,c3) VALUES (1208, 818, 'fff') RETURNING *;
   c1  | c2  |       c3        | c4 | c5 | c6 |     c7     | c8 
 ------+-----+-----------------+----+----+----+------------+----
@@ -2559,7 +2522,8 @@ UPDATE ft2 SET c2 = c2 + 600 WHERE c1 % 10 = 8 AND c1 < 1200 RETURNING *;
 (102 rows)
 
 -- Test errors thrown on remote side during update
-ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);'
+ALTER TABLE
 INSERT INTO ft1(c1, c2) VALUES(11, 12);  -- duplicate key
 ERROR:  duplicate key value violates unique constraint "t1_pkey"
 DETAIL:  Key ("C 1")=(11) already exists.
@@ -2591,7 +2555,7 @@ select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
  407 |   100
 (13 rows)
 
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+\! psql -p 7000 contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
  c2  | count 
 -----+-------
    0 |   100
@@ -2770,7 +2734,7 @@ select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
 (13 rows)
 
 -- none of the above is committed yet remotely
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+\! psql -p 7000 contrib_regression -c  'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
  c2  | count 
 -----+-------
    0 |   100
@@ -2807,7 +2771,7 @@ select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
  407 |   100
 (13 rows)
 
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+ \! psql -p 7000 contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
  c2  | count 
 -----+-------
    1 |   100
@@ -2828,7 +2792,7 @@ select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
 -- ===================================================================
 -- test serial columns (ie, sequence-based defaults)
 -- ===================================================================
-create table loc1 (f1 serial, f2 text);
+-- create table loc1 (f1 serial, f2 text);
 create foreign table rem1 (f1 serial, f2 text)
   server loopback options(table_name 'loc1');
 select pg_catalog.setval('rem1_f1_seq', 10, false);
@@ -2837,25 +2801,17 @@ select pg_catalog.setval('rem1_f1_seq', 10, false);
      10
 (1 row)
 
-insert into loc1(f2) values('hi');
+--insert into loc1(f2) values('hi');
 insert into rem1(f2) values('hi remote');
-insert into loc1(f2) values('bye');
+-- insert into loc1(f2) values('bye');
 insert into rem1(f2) values('bye remote');
-select * from loc1;
- f1 |     f2     
-----+------------
-  1 | hi
- 10 | hi remote
-  2 | bye
- 11 | bye remote
-(4 rows)
-
+--select * from loc1;
 select * from rem1;
  f1 |     f2     
 ----+------------
   1 | hi
- 10 | hi remote
   2 | bye
+ 10 | hi remote
  11 | bye remote
 (4 rows)
 
@@ -3022,7 +2978,7 @@ BEFORE INSERT OR UPDATE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 -- The new values should have 'triggered' appended
 INSERT INTO rem1 values(1, 'insert');
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |         f2         
 ----+--------------------
   1 | insert triggered !
@@ -3034,7 +2990,7 @@ INSERT INTO rem1 values(2, 'insert') RETURNING f2;
  insert triggered !
 (1 row)
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |         f2         
 ----+--------------------
   1 | insert triggered !
@@ -3042,7 +2998,7 @@ SELECT * from loc1;
 (2 rows)
 
 UPDATE rem1 set f2 = '';
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |      f2      
 ----+--------------
   1 |  triggered !
@@ -3056,7 +3012,7 @@ UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
  skidoo triggered !
 (2 rows)
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |         f2         
 ----+--------------------
   1 | skidoo triggered !
@@ -3072,10 +3028,11 @@ UPDATE rem1 set f1 = 10;          -- all columns should be transmitted
    ->  Foreign Scan on public.rem1
          Output: 10, f2, ctid, rem1.*
          Remote SQL: SELECT f1, f2, ctid FROM public.loc1 FOR UPDATE
-(5 rows)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 UPDATE rem1 set f1 = 10;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |               f2               
 ----+--------------------------------
  10 | skidoo triggered ! triggered !
@@ -3089,7 +3046,7 @@ CREATE TRIGGER trig_row_before_insupd2
 BEFORE INSERT OR UPDATE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 INSERT INTO rem1 values(1, 'insert');
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |               f2               
 ----+--------------------------------
   1 | insert triggered ! triggered !
@@ -3101,7 +3058,7 @@ INSERT INTO rem1 values(2, 'insert') RETURNING f2;
  insert triggered ! triggered !
 (1 row)
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |               f2               
 ----+--------------------------------
   1 | insert triggered ! triggered !
@@ -3109,7 +3066,7 @@ SELECT * from loc1;
 (2 rows)
 
 UPDATE rem1 set f2 = '';
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |            f2            
 ----+--------------------------
   1 |  triggered ! triggered !
@@ -3123,7 +3080,7 @@ UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
  skidoo triggered ! triggered !
 (2 rows)
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |               f2               
 ----+--------------------------------
   1 | skidoo triggered ! triggered !
@@ -3145,21 +3102,21 @@ BEFORE INSERT OR UPDATE OR DELETE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trig_null();
 -- Nothing should have changed.
 INSERT INTO rem1 VALUES (2, 'test2');
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |  f2  
 ----+------
   1 | test
 (1 row)
 
 UPDATE rem1 SET f2 = 'test2';
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |  f2  
 ----+------
   1 | test
 (1 row)
 
 DELETE from rem1;
-SELECT * from loc1;
+\! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
  f1 |  f2  
 ----+------
   1 | test
@@ -3174,8 +3131,8 @@ FOR EACH ROW EXECUTE PROCEDURE trigger_data(23,'skidoo');
 CREATE TRIGGER trig_row_after
 AFTER INSERT OR UPDATE OR DELETE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trigger_data(23,'skidoo');
-CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1
-FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
+\! psql -p 7000 contrib_regression -c 'CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();'
+CREATE TRIGGER
 INSERT INTO rem1(f2) VALUES ('test');
 NOTICE:  trig_row_before(23, skidoo) BEFORE ROW INSERT ON rem1
 NOTICE:  NEW: (12,test)

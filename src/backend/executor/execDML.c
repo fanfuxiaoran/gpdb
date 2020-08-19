@@ -159,30 +159,44 @@ updateParentTuple(TupleTableSlot *slot, TupleTableSlot *parentslot, ResultRelInf
 	map = resultRelInfo->ri_partInsertMap;
 
 	bool tupleDescMatch = (resultRelInfo->tupdesc_match == 1);
-	/* No map and matching tuple descriptor means no updating needed. */
-	if (map == NULL && tupleDescMatch)
-		return ;
-
 	/* Put the given tuple into attribute arrays. */
 	natts = slot->tts_tupleDescriptor->natts;
 	slot_getallattrs(slot);
 	values = slot_get_values(slot);
 	isnull = slot_get_isnull(slot);
 
-	/*
-	 * Get the target slot ready.
-	 */
 	parentvalues = slot_get_values(parentslot);
 	parentisnull = slot_get_isnull(parentslot);
+	ExecClearTuple(parentslot);
+	/* No map and matching tuple descriptor, but also needs to 
+	 * update the parentslot because the inserted values may 
+	 * have been updated by FDW and stored in slot.
+	 */ 
+	if (map == NULL && tupleDescMatch)
+	{
+		for (int attNo = 1; attNo <= natts; attNo++)
+		{
+			parentvalues[attNo - 1] = values[attNo - 1];
+			parentisnull[attNo - 1] = isnull[attNo - 1];
 
-	/* Restructure the input tuple.  Non-zero map entries are attribute
-	 * numbers in the target tuple, however, not every attribute
-	 * number of the input tuple need be present.  In particular,
-	 * attribute numbers corresponding to dropped attributes will be
-	 * missing.
-	 */
-	updateOldTupleValues(map, parentvalues, parentisnull, natts,
-						values, isnull, slot->tts_tupleDescriptor->natts);
+		}
+	}
+	else
+	{
 
+		/* update the parentslot. The "map" maps parentslot attribute
+		 * numbers to the slot attribute numbers. however, not every
+		 * attribute number of the input tuple need be present.  In
+		 * particular,attribute numbers corresponding to dropped 
+		 * attributes will be missing.
+		 */
+		updateOldTupleValues(map, parentvalues, parentisnull, natts,
+				values, isnull, slot->tts_tupleDescriptor->natts);
+
+	}
+	ExecStoreVirtualTuple(parentslot);
+	// set system attributes for RETURNING
+	slot_set_ctid(parentslot, slot_get_ctid(slot));
+	parentslot->tts_tableOid = slot->tts_tableOid;
 	return;
 }

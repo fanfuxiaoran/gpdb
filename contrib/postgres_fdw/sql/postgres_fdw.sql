@@ -2,11 +2,12 @@
 -- create FDW objects
 -- ===================================================================
 
+SET timezone = 'PST8PDT';
 CREATE EXTENSION postgres_fdw;
 
 CREATE SERVER testserver1 FOREIGN DATA WRAPPER postgres_fdw;
 CREATE SERVER loopback FOREIGN DATA WRAPPER postgres_fdw
-  OPTIONS (dbname 'contrib_regression');
+  OPTIONS (dbname 'contrib_regression', host 'localhost', port '7000');
 
 CREATE USER MAPPING FOR public SERVER testserver1
 	OPTIONS (user 'value', password 'value');
@@ -16,42 +17,6 @@ CREATE USER MAPPING FOR CURRENT_USER SERVER loopback;
 -- create objects used through FDW loopback server
 -- ===================================================================
 CREATE TYPE user_enum AS ENUM ('foo', 'bar', 'buz');
-CREATE SCHEMA "S 1";
-CREATE TABLE "S 1"."T 1" (
-	"C 1" int NOT NULL,
-	c2 int NOT NULL,
-	c3 text,
-	c4 timestamptz,
-	c5 timestamp,
-	c6 varchar(10),
-	c7 char(10),
-	c8 user_enum,
-	CONSTRAINT t1_pkey PRIMARY KEY ("C 1")
-);
-CREATE TABLE "S 1"."T 2" (
-	c1 int NOT NULL,
-	c2 text,
-	CONSTRAINT t2_pkey PRIMARY KEY (c1)
-);
-
-INSERT INTO "S 1"."T 1"
-	SELECT id,
-	       id % 10,
-	       to_char(id, 'FM00000'),
-	       '1970-01-01'::timestamptz + ((id % 100) || ' days')::interval,
-	       '1970-01-01'::timestamp + ((id % 100) || ' days')::interval,
-	       id % 10,
-	       id % 10,
-	       'foo'::user_enum
-	FROM generate_series(1, 1000) id;
-INSERT INTO "S 1"."T 2"
-	SELECT id,
-	       'AAA' || to_char(id, 'FM000')
-	FROM generate_series(1, 100) id;
-
-ANALYZE "S 1"."T 1";
-ANALYZE "S 1"."T 2";
-
 -- ===================================================================
 -- create foreign tables
 -- ===================================================================
@@ -233,30 +198,30 @@ SELECT * FROM ft1 WHERE c1 = ANY (ARRAY(SELECT c1 FROM ft2 WHERE c1 < 5));
 SELECT * FROM ft2 WHERE c1 = ANY (ARRAY(SELECT c1 FROM ft1 WHERE c1 < 5));
 
 -- bug #15613: bad plan for foreign table scan with lateral reference
-EXPLAIN (VERBOSE, COSTS OFF)
-SELECT ref_0.c2, subq_1.*
-FROM
-    "S 1"."T 1" AS ref_0,
-    LATERAL (
-        SELECT ref_0."C 1" c1, subq_0.*
-        FROM (SELECT ref_0.c2, ref_1.c3
-              FROM ft1 AS ref_1) AS subq_0
-             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
-    ) AS subq_1
-WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
-ORDER BY ref_0."C 1";
-
-SELECT ref_0.c2, subq_1.*
-FROM
-    "S 1"."T 1" AS ref_0,
-    LATERAL (
-        SELECT ref_0."C 1" c1, subq_0.*
-        FROM (SELECT ref_0.c2, ref_1.c3
-              FROM ft1 AS ref_1) AS subq_0
-             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
-    ) AS subq_1
-WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
-ORDER BY ref_0."C 1";
+--EXPLAIN (VERBOSE, COSTS OFF)
+--SELECT ref_0.c2, subq_1.*
+--FROM
+--    "S 1"."T 1" AS ref_0,
+--    LATERAL (
+--        SELECT ref_0."C 1" c1, subq_0.*
+--        FROM (SELECT ref_0.c2, ref_1.c3
+--              FROM ft1 AS ref_1) AS subq_0
+--             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
+--    ) AS subq_1
+--WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
+--ORDER BY ref_0."C 1";
+--
+--SELECT ref_0.c2, subq_1.*
+--FROM
+--    "S 1"."T 1" AS ref_0,
+--    LATERAL (
+--        SELECT ref_0."C 1" c1, subq_0.*
+--        FROM (SELECT ref_0.c2, ref_1.c3
+--              FROM ft1 AS ref_1) AS subq_0
+--             RIGHT JOIN ft2 AS ref_3 ON (subq_0.c3 = ref_3.c3)
+--    ) AS subq_1
+--WHERE ref_0."C 1" < 10 AND subq_1.c3 = '00001'
+--ORDER BY ref_0."C 1";
 
 -- ===================================================================
 -- parameterized queries
@@ -300,12 +265,12 @@ PREPARE st6 AS SELECT * FROM ft1 t1 WHERE t1.c1 = t1.c2;
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
 PREPARE st7 AS INSERT INTO ft1 (c1,c2,c3) VALUES (1001,101,'foo');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
-ALTER TABLE "S 1"."T 1" RENAME TO "T 0";
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 1" RENAME TO "T 0";'
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 0');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
 EXECUTE st6;
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
-ALTER TABLE "S 1"."T 0" RENAME TO "T 1";
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 0" RENAME TO "T 1"';
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 1');
 
 -- cleanup
@@ -374,7 +339,7 @@ COMMIT;
 -- ===================================================================
 -- test handling of collations
 -- ===================================================================
-create table loct3 (f1 text collate "C" unique, f2 text, f3 varchar(10) unique);
+-- create table loct3 (f1 text collate "C" unique, f2 text, f3 varchar(10) unique);
 create foreign table ft3 (f1 text collate "C", f2 text, f3 varchar(10))
   server loopback options (table_name 'loct3', use_remote_estimate 'true');
 
@@ -383,15 +348,15 @@ explain (verbose, costs off) select * from ft3 where f1 = 'foo';
 explain (verbose, costs off) select * from ft3 where f1 COLLATE "C" = 'foo';
 explain (verbose, costs off) select * from ft3 where f2 = 'foo';
 explain (verbose, costs off) select * from ft3 where f3 = 'foo';
-explain (verbose, costs off) select * from ft3 f, loct3 l
-  where f.f3 = l.f3 and l.f1 = 'foo';
+-- explain (verbose, costs off) select * from ft3 f, loct3 l
+--where f.f3 = l.f3 and l.f1 = 'foo';
 -- can't be sent to remote
 explain (verbose, costs off) select * from ft3 where f1 COLLATE "POSIX" = 'foo';
 explain (verbose, costs off) select * from ft3 where f1 = 'foo' COLLATE "C";
 explain (verbose, costs off) select * from ft3 where f2 COLLATE "C" = 'foo';
 explain (verbose, costs off) select * from ft3 where f2 = 'foo' COLLATE "C";
-explain (verbose, costs off) select * from ft3 f, loct3 l
-  where f.f3 = l.f3 COLLATE "POSIX" and l.f1 = 'foo';
+-- explain (verbose, costs off) select * from ft3 f, loct3 l
+--  where f.f3 = l.f3 COLLATE "POSIX" and l.f1 = 'foo';
 
 -- ===================================================================
 -- test writable foreign table stuff
@@ -427,21 +392,14 @@ DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
 DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
 
 -- Test that trigger on remote table works as expected
-CREATE OR REPLACE FUNCTION "S 1".F_BRTRIG() RETURNS trigger AS $$
-BEGIN
-    NEW.c3 = NEW.c3 || '_trig_update';
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER t1_br_insert BEFORE INSERT OR UPDATE
-    ON "S 1"."T 1" FOR EACH ROW EXECUTE PROCEDURE "S 1".F_BRTRIG();
+ \! psql -p 7000 contrib_regression -f sql/create_trigger.sql
 
 INSERT INTO ft2 (c1,c2,c3) VALUES (1208, 818, 'fff') RETURNING *;
 INSERT INTO ft2 (c1,c2,c3,c6) VALUES (1218, 818, 'ggg', '(--;') RETURNING *;
 UPDATE ft2 SET c2 = c2 + 600 WHERE c1 % 10 = 8 AND c1 < 1200 RETURNING *;
 
 -- Test errors thrown on remote side during update
-ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);
+\! psql -p 7000 contrib_regression -c 'ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);'
 
 INSERT INTO ft1(c1, c2) VALUES(11, 12);  -- duplicate key
 INSERT INTO ft1(c1, c2) VALUES(1111, -2);  -- c2positive
@@ -449,7 +407,7 @@ UPDATE ft1 SET c2 = -c2 WHERE c1 = 1;  -- c2positive
 
 -- Test savepoint/rollback behavior
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+\! psql -p 7000 contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 begin;
 update ft2 set c2 = 42 where c2 = 0;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
@@ -472,23 +430,23 @@ select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
 release savepoint s3;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
 -- none of the above is committed yet remotely
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+\! psql -p 7000 contrib_regression -c  'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 commit;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
-select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;
+ \! psql -p 7000 contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 
 -- ===================================================================
 -- test serial columns (ie, sequence-based defaults)
 -- ===================================================================
-create table loc1 (f1 serial, f2 text);
+-- create table loc1 (f1 serial, f2 text);
 create foreign table rem1 (f1 serial, f2 text)
   server loopback options(table_name 'loc1');
 select pg_catalog.setval('rem1_f1_seq', 10, false);
-insert into loc1(f2) values('hi');
+--insert into loc1(f2) values('hi');
 insert into rem1(f2) values('hi remote');
-insert into loc1(f2) values('bye');
+-- insert into loc1(f2) values('bye');
 insert into rem1(f2) values('bye remote');
-select * from loc1;
+--select * from loc1;
 select * from rem1;
 
 -- ===================================================================
@@ -630,18 +588,18 @@ FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 
 -- The new values should have 'triggered' appended
 INSERT INTO rem1 values(1, 'insert');
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 INSERT INTO rem1 values(2, 'insert') RETURNING f2;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = '';
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 EXPLAIN (verbose, costs off)
 UPDATE rem1 set f1 = 10;          -- all columns should be transmitted
 UPDATE rem1 set f1 = 10;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 DELETE FROM rem1;
 
@@ -652,13 +610,13 @@ BEFORE INSERT OR UPDATE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 
 INSERT INTO rem1 values(1, 'insert');
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 INSERT INTO rem1 values(2, 'insert') RETURNING f2;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = '';
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 DROP TRIGGER trig_row_before_insupd ON rem1;
 DROP TRIGGER trig_row_before_insupd2 ON rem1;
@@ -681,15 +639,15 @@ FOR EACH ROW EXECUTE PROCEDURE trig_null();
 -- Nothing should have changed.
 INSERT INTO rem1 VALUES (2, 'test2');
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 UPDATE rem1 SET f2 = 'test2';
 
-SELECT * from loc1;
+ \! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 DELETE from rem1;
 
-SELECT * from loc1;
+\! psql -p 7000 contrib_regression -c 'SELECT * from loc1;'
 
 DROP TRIGGER trig_null ON rem1;
 DELETE from rem1;
@@ -703,8 +661,7 @@ CREATE TRIGGER trig_row_after
 AFTER INSERT OR UPDATE OR DELETE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trigger_data(23,'skidoo');
 
-CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1
-FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
+\! psql -p 7000 contrib_regression -c 'CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();'
 
 INSERT INTO rem1(f2) VALUES ('test');
 UPDATE rem1 SET f2 = 'testo';

@@ -49,26 +49,6 @@ reconstructTupleValues(AttrMap *map,
 	}
 }
 
-// map's key is oldAttNo, value is newAttNo
-void
-updateOldTupleValues(AttrMap *map,
-					Datum *oldValues, bool *oldIsnull, int oldNumAttrs,
-					Datum *newValues, bool *newIsnull, int newNumAttrs)
-{
-	for (int oldAttNo = 1; oldAttNo <= oldNumAttrs; oldAttNo++)
-	{
-		int newAttNo = attrMap(map, oldAttNo);
-		if (newAttNo == 0)
-		{
-			continue;
-		}
-
-		Assert(newAttNo <= newNumAttrs);
-		oldValues[oldAttNo - 1] = newValues[newAttNo - 1];
-		oldIsnull[oldAttNo - 1] = newIsnull[newAttNo - 1];
-
-	}
-}
 /*
  * Use the supplied ResultRelInfo to create an appropriately restructured
  * version of the tuple in the supplied slot, if necessary.
@@ -144,59 +124,4 @@ reconstructMatchingTupleSlot(TupleTableSlot *slot, ResultRelInfo *resultRelInfo)
 	partslot = ExecStoreVirtualTuple(partslot);
 
 	return partslot;
-}
-
-void
-updateParentTuple(TupleTableSlot *slot, TupleTableSlot *parentslot, ResultRelInfo *resultRelInfo)
-{
-	int natts;
-	Datum *values;
-	bool *isnull;
-	AttrMap *map;
-	Datum *parentvalues;
-	bool *parentisnull;
-
-	map = resultRelInfo->ri_partInsertMap;
-
-	bool tupleDescMatch = (resultRelInfo->tupdesc_match == 1);
-	/* Put the given tuple into attribute arrays. */
-	natts = slot->tts_tupleDescriptor->natts;
-	slot_getallattrs(slot);
-	values = slot_get_values(slot);
-	isnull = slot_get_isnull(slot);
-
-	parentvalues = slot_get_values(parentslot);
-	parentisnull = slot_get_isnull(parentslot);
-	ExecClearTuple(parentslot);
-	/* No map and matching tuple descriptor, but also needs to 
-	 * update the parentslot because the inserted values may 
-	 * have been updated by FDW and stored in slot.
-	 */ 
-	if (map == NULL && tupleDescMatch)
-	{
-		for (int attNo = 1; attNo <= natts; attNo++)
-		{
-			parentvalues[attNo - 1] = values[attNo - 1];
-			parentisnull[attNo - 1] = isnull[attNo - 1];
-
-		}
-	}
-	else
-	{
-
-		/* update the parentslot. The "map" maps parentslot attribute
-		 * numbers to the slot attribute numbers. however, not every
-		 * attribute number of the input tuple need be present.  In
-		 * particular,attribute numbers corresponding to dropped 
-		 * attributes will be missing.
-		 */
-		updateOldTupleValues(map, parentvalues, parentisnull, natts,
-				values, isnull, slot->tts_tupleDescriptor->natts);
-
-	}
-	ExecStoreVirtualTuple(parentslot);
-	// set system attributes for RETURNING
-	slot_set_ctid(parentslot, slot_get_ctid(slot));
-	parentslot->tts_tableOid = slot->tts_tableOid;
-	return;
 }

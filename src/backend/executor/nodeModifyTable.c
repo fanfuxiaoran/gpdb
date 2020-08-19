@@ -413,9 +413,13 @@ ExecInsert(TupleTableSlot *parentslot,
 		/*
 		 * There might be Triggers on the remote table
 		 * which modifiy the values, so need to update
-		 * parentslot values.
+		 * parentslot values. But GPDB doesn't support 
+		 * a foreign table as a partition table, so the
+		 * the parentslot and slot are supposed to be
+		 * same.
 		 */
-		updateParentTuple(slot,parentslot,resultRelInfo);
+		Assert(resultRelInfo->ri_partInsertMap == NULL);
+		parentslot = slot;
 
 #if 0
 		/* FDW might have changed tuple */

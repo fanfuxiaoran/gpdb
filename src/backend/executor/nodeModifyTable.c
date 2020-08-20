@@ -405,17 +405,52 @@ ExecInsert(TupleTableSlot *parentslot,
 		if (slot == NULL)		/* "do nothing" */
 			return NULL;
 
-#if 0
 		/* FDW might have changed tuple */
-		tuple = ExecMaterializeSlot(slot); //GPDB_94_STABLE_MERGE_FIXME: Why GPDB removes this?
+		ExecMaterializeSlot(slot);
+
+		/*
+		 * There might be Triggers on the remote table
+		 * which modifiy the values, so need to update
+		 * parentslot, otherwise, the RETURNING expressions
+		 * will work on incorrect data.
+		 *
+		 * And, GPDB doesn't support a foreign table
+		 * as a partition table, so the parentslot's
+		 * and slot's tuple descriptors are supposed
+		 * to be same.
+		 *
+		 * when resultRelInfo->ri_partInsertMap is NULL, it means
+		 * the partition table's tuple descriptor is same as the
+		 * parent's.
+		 */
+		Assert( NULL == resultRelInfo->ri_partInsertMap);
+
+		/* The values in slot may have been updated by FDW or
+		 * not, anyway we update the parentslot here.
+		 */
+		int         natts = slot->tts_tupleDescriptor->natts;
+		slot_getallattrs(slot);
+		Datum *values = slot_get_values(slot);
+		bool *isnull = slot_get_isnull(slot);
+
+		/* make sure the parentslot is clear */
+		ExecClearTuple(parentslot);
+
+		/* update parentslot */
+		memcpy(parentslot->PRIVATE_tts_values, values, natts * sizeof(Datum));
+		memcpy(parentslot->PRIVATE_tts_isnull, isnull, natts * sizeof(bool));
+
+		/* mark parentslot as containing a virtual tuple */
+		ExecStoreVirtualTuple(parentslot);
 
 		/*
 		 * AFTER ROW Triggers or RETURNING expressions might reference the
 		 * tableoid column, so initialize t_tableOid before evaluating them.
 		 */
-		tuple->t_tableOid = RelationGetRelid(resultRelationDesc);
-#endif
-
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
+		/* set parentslot's tableoid and ctid */
+		parentslot->tts_tableOid = slot->tts_tableOid;
+		slot_set_ctid(parentslot, slot_get_ctid(slot));
 		newId = InvalidOid;
 	}
 	else
@@ -703,14 +738,8 @@ ExecDelete(ItemPointer tupleid,
 		if (slot->PRIVATE_tts_flags & TTS_ISEMPTY)
 			ExecStoreAllNullTuple(slot);
 
-		/*
-		 * GPDB_94_MERGE_FIXME: gpdb does not use tableoid. Do we need to bring
-		 * the related code back?
-		 */
-#if 0
-		tuple = ExecMaterializeSlot(slot);
-		tuple->t_tableOid = RelationGetRelid(resultRelationDesc);
-#endif
+		ExecMaterializeSlot(slot);
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
 	}
 	else
 	{
@@ -1334,16 +1363,14 @@ ExecUpdate(ItemPointer tupleid,
 		if (slot == NULL)		/* "do nothing" */
 			return NULL;
 
-#if 0
 		/* FDW might have changed tuple */
-		tuple = ExecMaterializeSlot(slot); //GPDB_94_STABLE_MERGE_FIXME: Why GPDB removes this?
+		ExecMaterializeSlot(slot);
 
 		/*
 		 * AFTER ROW Triggers or RETURNING expressions might reference the
 		 * tableoid column, so initialize t_tableOid before evaluating them.
 		 */
-		tuple->t_tableOid = RelationGetRelid(resultRelationDesc);
-#endif
+		slot->tts_tableOid = RelationGetRelid(resultRelationDesc);
 	}
 	else
 	{

@@ -1,0 +1,680 @@
+\qw
+q
+\q
+\q
+\q
+create extension postgres_fdw;
+\q
+create extension postgres_fdw;
+\q
+create extension postgres_fdw;
+drop extension postgres_fdw ;
+create extension postgres_fdw;
+\q
+drop extension postgres_fdw ;
+create extension postgres_fdw;
+\q
+drop extension postgres_fdw ;
+create extension postgres_fdw;
+\q
+\d
+select * from ft1;
+\q
+create extension postgres_fdw;
+\q
+create extension postgres_fdw;
+\q
+drop extension postgres_fdw ;
+create extension postgres_fdw ;
+\q
+drop extension postgres_fdw ;
+create extension postgres_fdw ;
+\q
+create extension postgres_fdw ;
+\q
+drop extension postgres_fdw ;
+create extension postgres_fdw ;
+\q
+\d
+drop extension postgres_fdw ;
+create extension postgres_fdw ;
+\q
+create extension postgres_fdw ;
+drop extension postgres_fdw ;
+\q
+create extension postgres_fdw;
+\q
+\d
+select version();
+\q
+create extension postgres_fdw;
+\q
+create extension postgres_fdw;
+\q
+select version();
+drop extension postgres_fdw ;
+create extension postgres_fdw ;
+\q
+create extension postgres_fdw;
+\q
+drop extension postgres_fdw;
+\q
+create extension postgres_fdw;
+q\
+\q
+create extension postgres_fdw;
+CREATE FOREIGN TABLE foreign_table(a int)  SERVER foreign_server OPTIONS (schema_name 'public', table_name 'test');
+CREATE SERVER foreign_server  FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '7000', dbname 'postgres');
+CREATE USER MAPPING FOR xiwang  SERVER foreign_server       OPTIONS (user 'xiwang', password '');
+CREATE USER MAPPING FOR xiwang  SERVER foreign_server       OPTIONS (user 'gpadmin', password '');
+CREATE USER MAPPING FOR gpadmin SERVER foreign_server   OPTIONS (user 'gpadmin', password '');
+CREATE FOREIGN TABLE foreign_table(a int)  SERVER foreign_server OPTIONS (schema_name 'public', table_name 'test');
+select * from test;
+select * from foreign_table ;
+select * from foreign_table ;
+select * from foreign_table ;
+select * from foreign_table ;
+\q
+create table test (a int);
+\d
+drop table test;
+create table test(a int);
+insert into test values(1);
+\q
+CREATE SERVER foreign_server  FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '7000', dbname 'postgres');
+create extension postgres_fdw;
+\q
+create extension postgres_fdw;
+CREATE SERVER foreign_server  FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '7000', dbname 'postgres');
+CREATE USER MAPPING FOR gpadmin SERVER foreign_server   OPTIONS (user 'gpadmin', password '');
+CREATE FOREIGN TABLE foreign_table(a int)  SERVER foreign_server OPTIONS (schema_name 'public', table_name 'test');
+select * from foreign_table ;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+select * from rem1;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(3, 'insert') RETURNING f2;
+select * from rem1;
+select version();
+\q
+set gp_vmem_idle_resource_timeout=10000000;
+select version();
+select * from rem1;
+INSERT INTO rem1 values(3, 'insert') RETURNING f2;
+INSERT INTO rem1 values(1, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(4, 'insert') RETURNING f2;
+INSERT INTO rem1 values(5, 'insert') RETURNING f2;
+\d rem1;
+INSERT INTO rem1 values(5, 'insert') RETURNING f2;
+INSERT INTO rem1 values(5, 'insert') RETURNING f2;
+INSERT INTO rem1 values(5, 'insert') RETURNING f2;
+INSERT INTO rem1 values(6, 'insert') RETURNING f2;
+INSERT INTO rem1 values(7, 'insert') RETURNING f2;
+INSERT INTO rem1 values(0, 'insert') RETURNING f2;
+INSERT INTO rem1 values(0, 'insert') RETURNING f2;
+INSERT INTO rem1 values(1, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\d
+select * from ft1;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+INSERT INTO rem1 values(2, 'insert') RETURNING f2;
+\q
+\d
+\q
+select * from rem1(f2);
+select * from rem1;
+\q
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test1') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+\d
+create table test(a int);
+c
+\d
+insert into test values(1) returning ctid;
+insert into test values(1) returning ctid;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+set gp_vmem_idle_resource_timeout=10000;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+set gp_vmem_idle_resource_timeout=1000000;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+insert into test values(2) returning ctid;
+explain insert into test values(2) returning ctid;
+\d
+explain insert into test values(2) returning ctid;
+explain(verbose)  insert into test values(2) returning ctid;
+\q
+\d
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+\q
+\q
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test2') RETURNING ctid;
+\q
+\d tt
+\q
+\d
+\d mpp21090_xchange_pttab_dropcol_idx_dml_int4
+\d tt
+\d ft1;
+\q
+DROP TABLE IF EXISTS mpp21090_xchange_pttab_dropcol_idx_dml_int4;
+CREATE TABLE mpp21090_xchange_pttab_dropcol_idx_dml_int4
+(
+    col1 int4,
+    col2 int4,
+    col3 char,
+    col4 int,
+    col5 int4
+)
+PARTITION BY RANGE(col2)(partition partone start(1) end(100000001)  WITH (APPENDONLY=true, COMPRESSLEVEL=5, ORIENTATION=column),partition parttwo start(100000001) end(200000001) WITH (APPENDONLY=true, COMPRESSLEVEL=5, ORIENTATION=row),partition partthree start(200000001) end(300000001))
+SERVER loopback  OPTIONS (schema_name 'public', table_name 'test') ;
+CREATE FOREIGN TABLE mpp21090_xchange_pttab_dropcol_idx_dml_int4
+(
+    col1 int4,
+    col2 int4,
+    col3 char,
+    col4 int,
+    col5 int4
+)
+PARTITION BY RANGE(col2)(partition partone start(1) end(100000001)  WITH (APPENDONLY=true, COMPRESSLEVEL=5, ORIENTATION=column),partition parttwo start(100000001) end(200000001) WITH (APPENDONLY=true, COMPRESSLEVEL=5, ORIENTATION=row),partition partthree start(200000001) end(300000001))
+SERVER loopback  OPTIONS (schema_name 'public', table_name 'test') ;
+\q
+CREATE FOREIGN TABLE tt (
+    col2 int4,
+    col3 char,
+    col4 int,
+    col5 int4
+)  SERVER loopback  OPTIONS (schema_name 'public', table_name 'test', mpp_execute 'all segments') ;
+\d tt
+\q
+create role postgres;
+\q
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+INSERT INTO rem1(f2) VALUES ('test') RETURNING ctid;
+\q
+\q
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+create extension dblink;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=6000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=6000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+drop extension dblink;
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+create extension dblink;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+select * from dblink_fdw_validator('database=postgres host=localhost port=7000');
+create extension dblink;
+\q
+select * from dblink_fdw_validator('database=postgres host=localhost port=7000');
+\D dblink_fdw_validator
+\f dblink_fdw_validator
+\Q
+\q
+SELECT dblink_connect('dbname=contrib_regression host=localhost port=700');
+SELECT dblink_connect('dbname=contrib_regression host=localhost port=7000');
+SELECT dblink_connect('dbname=contrib_regression host=localhost port=7000');
+\q
+create table test(a int);
+\d
+\d test
+select * from test;
+insert into test values(2);
+insert into test values(4);
+insert into test values(6);
+\\q
+\q
+\d
+SELECT dblink_connect('dbname=contrib_regression host=localhost port=7000');
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+create role test;
+\q
+grant all to test;
+drop role test;
+CREATE ROLE test LOGIN;
+\q
+CREATE USER test WITH PASSWORD '1234';
+\q
+select * from test;
+\q
+\q
+\q
+\q
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000 passwd=''','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost port=7000 passwd="" ','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres ','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost  ','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost  passwd="" ','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres host=localhost  passwd= ','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres  passwd= host=localhost','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres, passwd=, host=localhost','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres, user=test passwd=, host=localhost','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres, user=test passwd=xx, host=localhost','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres, user=test passwd=xx','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres, user=test passwd=xx host=127.0.0.1','SELECT * FROM test') AS t(a int)
+;
+select dblink_connect('host=localhost user=test port=7000 passwd=');
+SELECT dblink_connect('host=remotehost port=5432 dbname=postgres user=gpadmin password=secret');
+SELECT dblink_connect('host=locahost port=5432 dbname=postgres user=gpadmin password=secret');
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=gpadmin password=secret');
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=gpadmin password=');
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=test password=');
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=test password=1234');
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=test password=1234');
+\q
+SELECT dblink_connect('host=localhost port=7000 dbname=postgres user=test password=1234');
+\q
+drop role test;
+CREATE USER xx WITH PASSWORD '1234' CREATEDB;
+\q
+\d
+select * from test;
+\q
+create table test(a int);
+ins
+\d
+insert into test values(1);
+q
+\q
+SELECT *
+FROM dblink('dbname=testdb, user=xx passwd=1234 host=127.0.0.1','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=127.0.0.1','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=127.0.0.1 port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+\d
+\q
+\q
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=testdb, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+\q
+\d
+select * from test;
+drop table test;
+\q
+alter table test change owner to xx;
+alter table test  owner to xx;
+\q
+select * from test;
+\q
+SELECT *
+FROM dblink('dbname=postgres, user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT  dblink_connect('dbname=postgres user=xx password=1234 host=localhost  port=7000');
+\q
+create role t1 with passwd ('1234');
+create role t1 with password ('1234');
+create role t1 with password '1234';
+\q
+drop role t1;
+create role t1 with password '1234' CREATEDB;
+\Q
+\q
+drop role t1;
+create role t1 with password '1234' CREATEDB LOGIN;
+\q
+\d
+SELECT  dblink_connect('dbname=postgres user=xx password=1234 host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234 host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234 host=localhost  port=7000');
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\d
+create table test(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+ where t.a=test.a;
+SELECT *
+FROM test, dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+ where t.a=test.a;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+ where t.a=test.a;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+create extension dblink;
+\q
+create extension dblink;
+\q
+create extension dblink;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int)
+;
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost  port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+create extension dblink;
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=xx port=7000','SELECT * FROM test') AS t(a int);
+\q
+create extension dblink;
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=xx port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=test password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=gpadmin password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=gpadmin password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT  dblink_connect('dbname=postgres user=xx  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=1 password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+\q
+\q
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+\q
+create role test with createdb;
+\q
+drop role test;
+create role test with createdb login;
+\q
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+\q
+SELECT  dblink_connect('dbname=postgres user=xx password=1234  host=localhost  port=7000');
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+SELECT *
+FROM dblink('dbname=postgres user=xx password=1234 host=localhost port=7000','SELECT * FROM test') AS t(a int);
+\q
+\q
+\q
+\q
+\d
+\q
+\d ft1
+\q
+\d+ ft1
+\d+ loopback;
+\d+ loopback
+\d pg_foreign_server
+select * from pg_foreign_server;
+\q
+\set PG_PORT=5432
+\ set PG_PORT=5432
+set PG_PORT=5432
+;
+set PG_PORT=5432
+;
+\d
+\set pg_port=5432;
+\q
+\q
+\! echo ${PG_PORT}
+\q
+\! echo ${PG_PORT}
+\q
+\set a = 67;
+\d
+create table xx(a int);
+insert into xx values (${a});
+select * from a
+;
+insert into xx values (${a});
+\set 
+\q
+\d
+\set
+\set PG_PORT=${PG_PORT}
+\set PG_PORT=${PG_PORT}
+\Q
+\q
+\d
+\q
+\d
+\s S 1

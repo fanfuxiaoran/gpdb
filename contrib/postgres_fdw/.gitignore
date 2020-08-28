@@ -1,4 +1,7 @@
 # Generated subdirectories
 /log/
-/results/
+/test/results/
+/test/pgsql
+/test/pgdata
+/test/pglog
 /tmp_check/

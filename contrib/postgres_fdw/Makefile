@@ -1,7 +1,7 @@
-# contrib/postgres_fdw/Makefile
+#contrib/postgres_fdw/Makefile
 # disable postgre_fdw on MaxOS as --exclude-libs and -Bstatic are not supported
 OS := $(shell uname -s)
-ifneq ($(OS),Darwin)
+ifeq ($(OS),Darwin)
 $(error "postgres_fdw can't be built on Mac")
 endif
 
@@ -14,7 +14,9 @@ SHLIB_LINK_INTERNAL = -Wl,--exclude-libs=libpq.a -Wl,-Bstatic $(libpq) -Wl,-Bdyn
 EXTENSION = postgres_fdw
 DATA = postgres_fdw--1.0.sql
 
-REGRESS = postgres_fdw gp_postgres_fdw
+REGRESS = postgres_fdw  gp_postgres_fdw
+REGRESS_OPTS = --inputdir=test --outputdir=test \
+			    --load-extension=$(EXTENSION)
 
 # the db name is hard-coded in the tests
 override USE_MODULE_DB =
@@ -30,3 +32,14 @@ top_builddir = ../..
 include $(top_builddir)/src/Makefile.global
 include $(top_srcdir)/contrib/contrib-global.mk
 endif
+
+# test
+# if you want to change the PG_PORT, please update it 
+# both the below PG_PORT and the port in test/sql/postgres_fdw.sql
+# which is the option in create foreign server
+export PG_PORT=5432
+installcheck: prep_postgres
+prep_postgres:
+	sh test/postgres_setup.sh
+
+.PHONY: prep_postgres

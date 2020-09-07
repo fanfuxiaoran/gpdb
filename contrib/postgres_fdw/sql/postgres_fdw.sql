@@ -21,7 +21,7 @@ CREATE USER MAPPING FOR CURRENT_USER SERVER pgserver;
 -- create objects used through FDW pgserver server
 -- ===================================================================
 CREATE TYPE user_enum AS ENUM ('foo', 'bar', 'buz');
-\! psql -p ${PG_PORT} contrib_regression -f sql/postgres_init.sql
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -f sql/postgres_init.sql
 -- ===================================================================
 -- create foreign tables
 -- ===================================================================
@@ -270,12 +270,12 @@ PREPARE st6 AS SELECT * FROM ft1 t1 WHERE t1.c1 = t1.c2;
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
 PREPARE st7 AS INSERT INTO ft1 (c1,c2,c3) VALUES (1001,101,'foo');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
-\! psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 1" RENAME TO "T 0";'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 1" RENAME TO "T 0";'
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 0');
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st6;
 EXECUTE st6;
 EXPLAIN (VERBOSE, COSTS OFF) EXECUTE st7;
-\! psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 0" RENAME TO "T 1"';
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 0" RENAME TO "T 1"';
 ALTER FOREIGN TABLE ft1 OPTIONS (SET table_name 'T 1');
 
 -- cleanup
@@ -397,14 +397,14 @@ DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
 DELETE FROM ft2 WHERE c1 = 9999 RETURNING tableoid::regclass;
 
 -- Test that trigger on remote table works as expected
- \! psql -p ${PG_PORT} contrib_regression -f sql/create_trigger.sql
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -f sql/create_trigger.sql
 
 INSERT INTO ft2 (c1,c2,c3) VALUES (1208, 818, 'fff') RETURNING *;
 INSERT INTO ft2 (c1,c2,c3,c6) VALUES (1218, 818, 'ggg', '(--;') RETURNING *;
 UPDATE ft2 SET c2 = c2 + 600 WHERE c1 % 10 = 8 AND c1 < 1200 RETURNING *;
 
 -- Test errors thrown on remote side during update
-\! psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'ALTER TABLE "S 1"."T 1" ADD CONSTRAINT c2positive CHECK (c2 >= 0);'
 
 INSERT INTO ft1(c1, c2) VALUES(11, 12);  -- duplicate key
 INSERT INTO ft1(c1, c2) VALUES(1111, -2);  -- c2positive
@@ -412,7 +412,7 @@ UPDATE ft1 SET c2 = -c2 WHERE c1 = 1;  -- c2positive
 
 -- Test savepoint/rollback behavior
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
-\! psql -p ${PG_PORT} contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 begin;
 update ft2 set c2 = 42 where c2 = 0;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
@@ -435,10 +435,10 @@ select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
 release savepoint s3;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
 -- none of the above is committed yet remotely
-\! psql -p ${PG_PORT} contrib_regression -c  'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c  'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 commit;
 select c2, count(*) from ft2 where c2 < 500 group by 1 order by 1;
- \! psql -p ${PG_PORT} contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'select c2, count(*) from "S 1"."T 1" where c2 < 500 group by 1 order by 1;'
 
 -- ===================================================================
 -- test serial columns (ie, sequence-based defaults)
@@ -593,18 +593,18 @@ FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 
 -- The new values should have 'triggered' appended
 INSERT INTO rem1 values(1, 'insert');
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 INSERT INTO rem1 values(2, 'insert') RETURNING f2;
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = '';
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 EXPLAIN (verbose, costs off)
 UPDATE rem1 set f1 = 10;          -- all columns should be transmitted
 UPDATE rem1 set f1 = 10;
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 DELETE FROM rem1;
 
@@ -615,13 +615,13 @@ BEFORE INSERT OR UPDATE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();
 
 INSERT INTO rem1 values(1, 'insert');
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 INSERT INTO rem1 values(2, 'insert') RETURNING f2;
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = '';
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 UPDATE rem1 set f2 = 'skidoo' RETURNING f2;
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 DROP TRIGGER trig_row_before_insupd ON rem1;
 DROP TRIGGER trig_row_before_insupd2 ON rem1;
@@ -644,15 +644,15 @@ FOR EACH ROW EXECUTE PROCEDURE trig_null();
 -- Nothing should have changed.
 INSERT INTO rem1 VALUES (2, 'test2');
 
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 UPDATE rem1 SET f2 = 'test2';
 
- \! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+ \! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 DELETE from rem1;
 
-\! psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'SELECT * from loc1;'
 
 DROP TRIGGER trig_null ON rem1;
 DELETE from rem1;
@@ -666,7 +666,7 @@ CREATE TRIGGER trig_row_after
 AFTER INSERT OR UPDATE OR DELETE ON rem1
 FOR EACH ROW EXECUTE PROCEDURE trigger_data(23,'skidoo');
 
-\! psql -p ${PG_PORT} contrib_regression -c 'CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();'
+\! env PGOPTIONS='' psql -p ${PG_PORT} contrib_regression -c 'CREATE TRIGGER trig_local_before BEFORE INSERT OR UPDATE ON loc1 FOR EACH ROW EXECUTE PROCEDURE trig_row_before_insupdate();'
 
 INSERT INTO rem1(f2) VALUES ('test');
 -- UPDATE rem1 SET f2 = 'testo';

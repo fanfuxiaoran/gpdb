@@ -2371,6 +2371,11 @@ postgresAnalyzeForeignTable(Relation relation,
 		if (PQntuples(res) != 1 || PQnfields(res) != 1)
 			elog(ERROR, "unexpected result from deparseAnalyzeSizeSql query");
 		*totalpages = strtoul(PQgetvalue(res, 0, 0), NULL, 10);
+		/**/
+		if (*totalpages == 0)
+		{
+			*totalpages = 1;
+		}
 
 		PQclear(res);
 		res = NULL;

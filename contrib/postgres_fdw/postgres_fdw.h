@@ -45,6 +45,7 @@
 #include "libpq-fe.h"
 #endif /* FRONTEND */
 
+extern int	REMOTE_BLCKSZ;
 /* in postgres_fdw.c */
 extern int	set_transmission_modes(void);
 extern void reset_transmission_modes(int nestlevel);

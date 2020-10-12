@@ -591,6 +591,13 @@ resources:
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: gp-internal-artifacts/centos7/sigar-rhel7_x86_64-(1\.6\.5-.*).targz
 
+- name: postgres-server-10.10.3-centos7
+  type: gcs
+  source:
+      bucket: ((gcs-bucket))
+      json_key: ((concourse-gcs-resources-service-account-key))
+      versioned_file: fdw/centos7/pivotal-postgres-10.10-3.el7.x86_64.rpm
+
 {% endif %}
 {% if "ubuntu18.04" in os_types %}
 - name: libquicklz-ubuntu18.04
@@ -1344,6 +1351,8 @@ jobs:
         passed: [compile_gpdb_centos7]
         trigger: [[ test_trigger ]]
       - get: gpdb6-centos7-test
+      - get: postgres_server
+        resource: postgres-server-10.10.3-centos7
   - task: ic_gpdb
     {% if pipeline_configuration == "prod" %}
     tags: [icw-centos7]
@@ -1366,6 +1375,8 @@ jobs:
         resource: bin_gpdb_centos7
         trigger: [[ test_trigger ]]
       - get: gpdb6-centos7-test
+      - get: postgres_server
+        resource: postgres-server-10.10.3-centos7
   - task: ic_gpdb
     {% if pipeline_configuration == "prod" %}
     tags: [icw-centos7]
@@ -1388,6 +1399,8 @@ jobs:
         passed: [compile_gpdb_centos7]
         trigger: [[ test_trigger ]]
       - get: gpdb6-centos7-test
+      - get: postgres_server
+        resource: postgres-server-10.10.3-centos7
   - task: ic_gpdb
     {% if pipeline_configuration == "prod" %}
     tags: [icw-centos7]
@@ -1410,6 +1423,8 @@ jobs:
         resource: bin_gpdb_centos7
         trigger: [[ test_trigger ]]
       - get: gpdb6-centos7-test
+      - get: postgres_server
+        resource: postgres-server-10.10.3-centos7
   - task: ic_gpdb
     {% if pipeline_configuration == "prod" %}
     tags: [icw-centos7]

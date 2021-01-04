@@ -1046,3 +1046,74 @@ def test_59_gpload_yaml_wrong_port():
     copy_data('external_file_01.txt','data_file.txt')
     write_config_file(port='111111',format='text',file='data_file.txt',table='texttable')
 
+@prepare_before_test(num=603)
+def test_603_gpload_ext_staging_table():
+    "603 gpload ignore staging_table if the reuse is false"
+    file = mkpath('setup.sql')
+    runfile(file)
+    copy_data('external_file_13.csv','data_file.csv')
+    write_config_file(reuse_tables=False, format='csv', file='data_file.csv', table='csvtable', delimiter="','", log_errors=True,error_limit=10,staging_table='staging_table')
+
+@prepare_before_test(num=651,times=1)
+def test_651_gpload_sql_before_success():
+    "651 gpload executes `before sql` successfully"
+    file = mkpath('setup.sql')
+    runfile(file)
+    f = open(mkpath('query651.sql'),'a')
+    f.write("\\! psql -d reuse_gptest -c 'SELECT COUNT(*) FROM test_651'")
+    f.close()
+    sql = '''DROP TABLE IF EXISTS texttable_651;
+             CREATE TABLE texttable_651 (
+             s1 text, s2 text, s3 text, dt timestamp, n1 smallint, n2 integer, n3 bigint, n4 decimal,
+             n5 numeric, n6 real, n7 double precision) DISTRIBUTED BY (n1);
+             CREATE TABLE test_651 (c1 int);'''
+    (ok, out) = psql_run(cmd=sql,dbname='reuse_gptest')
+    if not ok:
+        if not ok:
+            raise Exception("Unable to execute sql %s" % out)
+    write_config_file(format='text',table='texttable_651',sql=True,before="INSERT INTO test_651 VALUES(1)")
+
+@prepare_before_test(num=652, times=1)
+def test_652_gpload_sql_before_fail():
+    "652 gpload fails to execute `before sql`"
+    file = mkpath('setup.sql')
+    runfile(file)
+    sql = '''DROP TABLE IF EXISTS texttable_652;
+             CREATE TABLE texttable_652 (c1 int);'''
+    (ok, out) = psql_run(cmd=sql,dbname='reuse_gptest')
+    if not ok:
+        if not ok:
+            raise Exception("Unable to execute sql %s" % out)
+    write_config_file(format='text',table='texttable_652',sql=True,before="INSERT INTO test_652 VALUES(1)")
+
+@prepare_before_test(num=653, times=1)
+def test_653_gpload_sql_after_success():
+    "653 gpload executes `after sql` successfully"
+    file = mkpath('setup.sql')
+    runfile(file)
+    f = open(mkpath('query653.sql'),'a')
+    f.write("\\! psql -d reuse_gptest -c 'SELECT COUNT(*) FROM test_653'")
+    f.close()
+    sql = '''DROP TABLE IF EXISTS texttable_653;
+             CREATE TABLE texttable_653 (
+             s1 text, s2 text, s3 text, dt timestamp, n1 smallint, n2 integer, n3 bigint, n4 decimal,
+             n5 numeric, n6 real, n7 double precision) DISTRIBUTED BY (n1);
+             CREATE TABLE test_653(c1 int);'''
+    (ok, out) = psql_run(cmd=sql,dbname='reuse_gptest')
+    if not ok:
+        if not ok:
+            raise Exception("Unable to execute sql %s" % out)
+    write_config_file(format='text',table='texttable_653',sql=True,after="INSERT INTO test_653 VALUES(1)")
+
+@prepare_before_test(num=654,times=1)
+def test_654_gpload_sql_after_fail():
+    "654 gpload fails to execute `after sql`"
+    file = mkpath('setup.sql')
+    runfile(file)
+    sql = '''DROP TABLE IF EXISTS texttable_654;
+             CREATE TABLE texttable_654 (c1 int);'''
+    (ok, out) = psql_run(cmd=sql,dbname='reuse_gptest')
+    if not ok:
+        if not ok:
+            raise Exception("Unable to execute sql %s" % out)
+    write_config_file(format='text',table='texttable_654',sql=True,before="INSERT INTO test_654 VALUES(1)")

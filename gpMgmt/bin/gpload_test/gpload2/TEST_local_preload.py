@@ -54,3 +54,11 @@ def test_605_with_reuse_tables_true_table_changed():
 def test_606_with_reuse_tables_true_port_changed():
     "606 gpload with reuse_tables is true, but port is changed, external table is not reused"
     write_config_file(mode='insert',reuse_tables=True,fast_match=False,file='data_file.txt',table='texttable', input_port='8899',error_limit=1002, truncate=False)
+
+@prepare_before_test(num=607, times=2)
+def test_603_gpload_ext_staging_table():
+    "607 gpload ignore staging_table if the reuse is false"
+    file = mkpath('setup.sql')
+    runfile(file)
+    copy_data('external_file_13.csv','data_file.csv')
+    write_config_file(reuse_tables=False, format='csv', file='data_file.csv', table='csvtable', delimiter="','", log_errors=True,error_limit=10,staging_table='staging_table')
